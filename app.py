@@ -1,54 +1,115 @@
+
 import os
 from PIL import Image
 from dotenv import load_dotenv
-import google.generativeai as genai
-from flask import Flask, request, render_template, render_template_string, redirect, url_for
+from google import genai
+from flask import Flask, request, render_template
 
-# Load environment variables from .env
+# Load environment variables
 load_dotenv()
 
-genai.configure(api_key=os.getenv("GOOGLE_API_KEY"))# Configure Google Generative AI
+api_key = os.getenv("GOOGLE_API_KEY")
 
-vis_model = genai.GenerativeModel('gemini-pro-vision') # Loaded the Pro-Vision model
+if not api_key:
+    raise ValueError(
+        "GOOGLE_API_KEY is missing. Check your .env file."
+    )
 
-text_model = genai.GenerativeModel('gemini-pro') # Loaded the Pro model
+# Initialize Gemini client
+client = genai.Client(api_key=api_key)
 
 app = Flask(__name__)
 
-# Function to generate content
+MODEL_NAME = "gemini-3.8-flash"
+
+
+# Check whether the uploaded image is medical
+def validate(image):
+    prompt = """
+    Determine whether this image is related to medicine or healthcare.
+    Examples include medicine packaging, tablets, capsules,
+    medical scans, medical equipment, and medical reports.
+
+    Reply with only Yes or No.
+    """
+
+    response = client.models.generate_content(
+        model=MODEL_NAME,
+        contents=[prompt, image]
+    )
+
+    answer = (response.text or "").strip().lower()
+    return answer.startswith("yes")
+
+
+# Generate a description of the medical image
 def gen_image(prompt, image):
-    response = vis_model.generate_content(image)
-    return response.text
+    response = client.models.generate_content(
+        model=MODEL_NAME,
+        contents=[prompt, image]
+    )
 
-def validate(validation_prompt):
-    vresponse = text_model.generate_content(validation_prompt)
-    return vresponse.text
+    return response.text or "No description was generated."
 
-# Route for the main page
-@app.route('/', methods=['GET', 'POST'])
+
+# Main page
+@app.route("/", methods=["GET", "POST"])
 def index():
-    if request.method == 'POST':
-        image_prompt = '''
-                - Generate a very detailed medical description for the given image.
-                - Identify and describe any relevant medical conditions, anomalies, or abnormalities present in the image.
-                - Additionally, provide insights into any potential treatments or recommended actions based on the observed medical features.
-                - Please ensure the generated content is accurate and clinically relevant.
-                - Please don't provide false and misleading information.
-                '''
-        
-        uploaded_file = request.files['file']
-        image = Image.open(uploaded_file)
-        response_text = gen_image(image_prompt, image)
+    if request.method == "POST":
+        uploaded_file = request.files.get("file")
 
-        validation_prompt = "Check if the provided context is related to the medical field. Just Reply with 'Yes' or 'No'."
-        vans = validate(validation_prompt)
+        if not uploaded_file or not uploaded_file.filename:
+            return render_template(
+                "index.html",
+                response_text="Please upload an image first."
+            )
 
-        if vans == "Yes":
-            return render_template('index.html', response_text=response_text)
-        else:
-            return render_template('index.html', response_text="Please provide a valid medical image.")
+        try:
+            image = Image.open(uploaded_file)
+            image.load()
+            image = image.convert("RGB")
 
-    return render_template('index.html')
+            
+                
 
-if __name__ == '__main__':
+            image_prompt = """
+            Analyze this medical or healthcare-related image.
+
+            If it shows medicine packaging, describe the visible
+            brand name, medicine name, strength, and active
+            ingredient only when clearly readable.
+
+            If it shows a medical scan or report, describe
+            observable information cautiously and explain
+            relevant limitations.
+
+            Do not invent unreadable details or claim a definitive
+            diagnosis from an image alone. Do not prescribe
+            medicines or dosages. Explain when professional
+            medical advice is needed.
+
+            Clearly state any uncertainty in your analysis.
+            """
+
+            response_text = gen_image(image_prompt, image)
+
+            return render_template(
+                "index.html",
+                response_text=response_text
+            )
+
+        except Exception as e:
+            app.logger.exception("Image processing failed")
+            return render_template(
+                "index.html",
+                response_text=(
+                    "Unable to process the image. Please try again. "
+                    f"Error: {str(e)}"
+                )
+            )
+
+    return render_template("index.html")
+
+
+if __name__ == "__main__":
     app.run(debug=True)

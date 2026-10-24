@@ -1,25 +1,399 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Medical Image Recognition App</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#080f1e">
+  <title>MedVision AI | Medicine Recognition</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
-    <h1>Medical Image Recognition App</h1>
-    <form method="post" enctype="multipart/form-data">
-        <label for="file">Choose a medical image:</label>
-        <input type="file" name="file" accept=".jpg, .jpeg, .png" required>
-        <br>
-        <input type="submit" value="Generate Medical Description">
-    </form>
-    
-    {% if response_text %}
-        <div class="result">
-            <p>{{ response_text }}</p>
+  <div class="ambient ambient-one"></div>
+  <div class="ambient ambient-two"></div>
+
+  <header class="topbar">
+    <a class="brand" href="{{ url_for('index') }}" aria-label="MedVision AI home">
+      <span class="brand-mark" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none">
+          <path d="M12 4v16M4 12h16" stroke="currentColor"
+                stroke-width="2.4" stroke-linecap="round"/>
+        </svg>
+      </span>
+      <span>MedVision <b>AI</b></span>
+    </a>
+    <div class="topbar-status">
+      <span class="status-dot"></span> AI ASSISTANT
+    </div>
+  </header>
+
+  <main class="page-shell">
+    <section class="hero">
+      <div class="eyebrow">
+        <span class="eyebrow-line"></span>
+        INTELLIGENT HEALTHCARE ANALYSIS
+      </div>
+
+      <h1>Understand your medicine.<br>
+        <span>Make informed decisions.</span>
+      </h1>
+
+      <p class="hero-copy">
+        Upload a clear image of medicine packaging, a medical report,
+        or healthcare-related material to receive an AI-generated explanation.
+      </p>
+
+      <div class="trust-row">
+        <span><span class="mini-check">✓</span> Simple image upload</span>
+        <span><span class="mini-check">✓</span> AI-powered insights</span>
+        <span><span class="mini-check">✓</span> Private session interface</span>
+      </div>
+    </section>
+
+    <section class="workspace" aria-label="Medicine image analysis">
+      <div class="panel upload-panel">
+        <div class="panel-heading">
+          <div>
+            <div class="step-label">STEP 01</div>
+            <h2>Upload an image</h2>
+          </div>
+          <span class="heading-icon" aria-hidden="true">↥</span>
         </div>
-    {% endif %}
+
+        <p class="panel-description">
+          Choose an image from your device or drag it into the upload area.
+        </p>
+
+        <form id="uploadForm" method="POST"
+              enctype="multipart/form-data">
+          <input id="fileInput" type="file" name="file"
+                 accept="image/*" hidden required>
+
+          <div id="dropZone" class="drop-zone"
+               role="button" tabindex="0"
+               aria-label="Choose or drop an image">
+
+            <div id="uploadPlaceholder" class="upload-placeholder">
+              <div class="upload-icon-wrap">
+                <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <path d="M12 16V4m0 0L7.5 8.5M12 4l4.5 4.5M5 14.5v3A2.5 2.5 0 0 0 7.5 20h9a2.5 2.5 0 0 0 2.5-2.5v-3"
+                        stroke="currentColor" stroke-width="1.7"
+                        stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </div>
+
+              <h3>Drop your image here</h3>
+              <p>or <span class="browse-link">browse files</span>
+                on your device</p>
+              <span class="file-note">
+                JPG, PNG, WEBP · Choose a clear, readable image
+              </span>
+            </div>
+
+            <div id="previewWrap" class="preview-wrap" hidden>
+              <img id="imagePreview" alt="Preview of selected image">
+              <div class="preview-caption">
+                <span class="preview-file-icon">▧</span>
+                <span id="fileName" class="file-name">Selected image</span>
+                <button type="button" id="removeImage"
+                        class="remove-image"
+                        aria-label="Remove selected image"
+                        title="Remove image">×</button>
+              </div>
+            </div>
+          </div>
+
+          <div id="fileError" class="file-error"
+               role="alert" hidden></div>
+
+          <button id="analyzeButton" class="primary-button" type="submit">
+            <span class="button-icon" aria-hidden="true">✦</span>
+            <span id="buttonText">Analyze image</span>
+            <span class="button-arrow" aria-hidden="true">→</span>
+          </button>
+
+          <div id="loadingState" class="loading-state"
+               aria-live="polite" hidden>
+            <span class="spinner"></span>
+            <span>
+              <b>Analyzing your image</b>
+              <small>AI is examining the uploaded image. This may take a little while.</small>
+            </span>
+          </div>
+        </form>
+
+        <div class="privacy-note">
+          <span aria-hidden="true">⌑</span>
+          Only upload images you are comfortable sharing with the AI service.
+        </div>
+      </div>
+
+      <div class="panel results-panel" id="results">
+        <div class="panel-heading">
+          <div>
+            <div class="step-label">STEP 02</div>
+            <h2>Analysis results</h2>
+          </div>
+          <span class="result-badge">
+            <span class="status-dot"></span> AI OUTPUT
+          </span>
+        </div>
+
+        {% if response_text %}
+          <div class="result-content">
+            <div class="result-title-row">
+              <span class="result-symbol" aria-hidden="true">✦</span>
+              <div>
+                <h3>Image analysis complete</h3>
+                <p>Review the generated information below.</p>
+              </div>
+            </div>
+
+            <div id="resultText" class="result-text">{{ response_text }}</div>
+
+            <div class="medical-disclaimer">
+              <span aria-hidden="true">ⓘ</span>
+              <p>
+                <b>Important:</b> AI-generated information may be incorrect
+                or incomplete. Do not use it as a diagnosis or as a basis
+                for changing treatment. Confirm medicine details with a
+                pharmacist or qualified healthcare professional.
+              </p>
+            </div>
+
+            <button id="copyResult" type="button"
+                    class="secondary-button">▢ Copy results</button>
+          </div>
+        {% else %}
+          <div class="empty-state">
+            <div class="empty-illustration" aria-hidden="true">
+              <div class="orbit orbit-one"></div>
+              <div class="orbit orbit-two"></div>
+
+              <div class="scan-card">
+                <span class="scan-cross">+</span>
+                <span class="scan-line line-one"></span>
+                <span class="scan-line line-two"></span>
+                <span class="scan-line line-three"></span>
+              </div>
+
+              <span class="spark spark-one">✦</span>
+              <span class="spark spark-two">✧</span>
+            </div>
+
+            <h3>Your results will appear here</h3>
+            <p>
+              Upload an image and select <b>Analyze image</b> to get started.
+              Your AI-generated explanation will show up in this panel.
+            </p>
+
+            <div class="empty-tags">
+              <span>Medicine details</span>
+              <span>Image insights</span>
+              <span>Helpful context</span>
+            </div>
+          </div>
+        {% endif %}
+      </div>
+    </section>
+
+    <section class="how-it-works">
+      <div class="section-kicker">A SIMPLE WORKFLOW</div>
+
+      <div class="how-grid">
+        <article>
+          <span class="how-number">01</span>
+          <div>
+            <h3>Upload</h3>
+            <p>Select a clear image from your device.</p>
+          </div>
+        </article>
+
+        <article>
+          <span class="how-number">02</span>
+          <div>
+            <h3>Analyze</h3>
+            <p>Let the AI process the image and visible details.</p>
+          </div>
+        </article>
+
+        <article>
+          <span class="how-number">03</span>
+          <div>
+            <h3>Review</h3>
+            <p>Read the explanation and verify important details.</p>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <footer class="footer">
+      <span>
+        MedVision AI <span class="footer-dot">•</span>
+        Medicine Recognition System
+      </span>
+      <span>
+        For informational purposes only — not a substitute for professional medical advice.
+      </span>
+    </footer>
+  </main>
+
+  <script>
+    const form = document.getElementById("uploadForm");
+    const fileInput = document.getElementById("fileInput");
+    const dropZone = document.getElementById("dropZone");
+    const uploadPlaceholder = document.getElementById("uploadPlaceholder");
+    const previewWrap = document.getElementById("previewWrap");
+    const imagePreview = document.getElementById("imagePreview");
+    const fileName = document.getElementById("fileName");
+    const fileError = document.getElementById("fileError");
+    const removeImage = document.getElementById("removeImage");
+    const analyzeButton = document.getElementById("analyzeButton");
+    const loadingState = document.getElementById("loadingState");
+    const buttonText = document.getElementById("buttonText");
+
+    const allowedTypes = [
+      "image/jpeg",
+      "image/png",
+      "image/webp",
+      "image/gif",
+      "image/bmp"
+    ];
+
+    function showError(message) {
+      fileError.textContent = message;
+      fileError.hidden = false;
+    }
+
+    function clearError() {
+      fileError.textContent = "";
+      fileError.hidden = true;
+    }
+
+    function createFileList(file) {
+      const dataTransfer = new DataTransfer();
+      dataTransfer.items.add(file);
+      return dataTransfer.files;
+    }
+
+    function setFile(file) {
+      clearError();
+
+      if (!file) return;
+
+      if (!file.type.startsWith("image/") ||
+          !allowedTypes.includes(file.type)) {
+        showError(
+          "Please choose a supported image file (JPG, PNG, WEBP, GIF, or BMP)."
+        );
+        return;
+      }
+
+      if (file.size > 12 * 1024 * 1024) {
+        showError(
+          "This image is larger than 12 MB. Please choose a smaller image."
+        );
+        return;
+      }
+
+      fileInput.files = createFileList(file);
+      fileName.textContent = file.name;
+
+      const reader = new FileReader();
+
+      reader.onload = event => {
+        imagePreview.src = event.target.result;
+        uploadPlaceholder.hidden = true;
+        previewWrap.hidden = false;
+        dropZone.classList.add("has-image");
+      };
+
+      reader.readAsDataURL(file);
+    }
+
+    dropZone.addEventListener("click", event => {
+      if (event.target.closest("#removeImage")) return;
+      fileInput.click();
+    });
+
+    dropZone.addEventListener("keydown", event => {
+      if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault();
+        fileInput.click();
+      }
+    });
+
+    fileInput.addEventListener("change", () => {
+      if (fileInput.files && fileInput.files[0]) {
+        setFile(fileInput.files[0]);
+      }
+    });
+
+    ["dragenter", "dragover"].forEach(type => {
+      dropZone.addEventListener(type, event => {
+        event.preventDefault();
+        dropZone.classList.add("dragging");
+      });
+    });
+
+    ["dragleave", "drop"].forEach(type => {
+      dropZone.addEventListener(type, event => {
+        event.preventDefault();
+        dropZone.classList.remove("dragging");
+      });
+    });
+
+    dropZone.addEventListener("drop", event => {
+      const file = event.dataTransfer.files &&
+                   event.dataTransfer.files[0];
+
+      if (file) setFile(file);
+    });
+
+    removeImage.addEventListener("click", event => {
+      event.stopPropagation();
+      fileInput.value = "";
+      imagePreview.removeAttribute("src");
+      previewWrap.hidden = true;
+      uploadPlaceholder.hidden = false;
+      dropZone.classList.remove("has-image");
+      clearError();
+    });
+
+    form.addEventListener("submit", event => {
+      if (!fileInput.files || !fileInput.files[0]) {
+        event.preventDefault();
+        showError("Please select an image before starting the analysis.");
+        return;
+      }
+
+      clearError();
+      analyzeButton.disabled = true;
+      buttonText.textContent = "Analyzing...";
+      loadingState.hidden = false;
+    });
+
+    const copyButton = document.getElementById("copyResult");
+    const resultText = document.getElementById("resultText");
+
+    if (copyButton && resultText) {
+      copyButton.addEventListener("click", async () => {
+        try {
+          await navigator.clipboard.writeText(resultText.innerText);
+          copyButton.textContent = "✓ Copied";
+
+          setTimeout(() => {
+            copyButton.textContent = "▢ Copy results";
+          }, 1800);
+        } catch {
+          copyButton.textContent = "Select text to copy";
+        }
+      });
+    }
+
+    if (resultText) {
+      resultText.textContent = resultText.textContent.trim();
+    }
+  </script>
 </body>
 </html>
