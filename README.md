@@ -23,7 +23,7 @@ Follow these steps to install and set up the project directly from the GitHub re
    - Navigate to the directory where you want to install the project.
    - Run the following command to clone the GitHub repository:
      ```
-     git clone https://github.com/KalyanMurapaka45/--------------------.git
+     git clone
      ```
 
 2. **Create a Virtual Environment** (Optional but recommended)
@@ -65,14 +65,14 @@ If you prefer to use Docker, you can install and run the project using a Docker 
    - Open your terminal or command prompt.
    - Run the following command to pull the Docker image from DockerHub:
      ```
-     docker pull kalyan45/movierecommend-app
+     docker pull 
      ```
      This command downloads the Docker image from the DockerHub.
 
 2. **Run the Docker Container**
    - Start the Docker container by running the following command. Adjust the port mapping as needed:
      ```
-     docker run -p 5000:5000 kalyan45/movierecommend-app
+     docker run -p 5000:5000 
      ```
      This command launches the project within a Docker container.
 
@@ -120,10 +120,6 @@ Contributions are what make the open-source community such an amazing place to l
 
 This project is licensed under the [Open Source Initiative (OSI)](https://opensource.org/) approved GNU General Public License v3.0 License - see the [LICENSE.txt](LICENSE.txt) file for details.<br>
 
-
-## Contact Details
-
-Hema Kalyan Murapaka - [kalyanmurapaka274@gmail.com](kalyanmurapaka274@gmail.com)<br>
 
 
 ## Acknowledgements
